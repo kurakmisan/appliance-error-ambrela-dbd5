@@ -1,8 +1,8 @@
 """The Funniest Honest Appliance Error.
 
 Writes a single honest appliance error line to /output/entry.txt
-(UTF-8, 1-200 characters). No input, no network, standard library
-only, same bytes on every run.
+(one plain-ASCII line, 1-200 characters, no control characters).
+No input, no network, standard library only, same bytes on every run.
 """
 
 import os
@@ -30,8 +30,27 @@ MAX_CHARS = 200
 
 
 def entry_text() -> str:
+    """Return the picked line, validated against the competition rules.
+
+    The entry must be one plain-ASCII line of 1-200 characters with no
+    embedded newline or control character. Each rule is checked
+    separately so a failure names the exact rule that was broken
+    instead of surfacing as a bare IndexError or a silent bad file.
+    """
+    if not 0 <= PICK < len(CANDIDATES):
+        raise ValueError(
+            f"PICK index {PICK} out of range for {len(CANDIDATES)} candidates"
+        )
     line = " ".join(CANDIDATES[PICK].split())
-    if not line or len(line) > MAX_CHARS:
+    if not line:
+        raise ValueError("entry is empty after whitespace normalisation")
+    if any(ord(ch) < 32 or ord(ch) == 127 for ch in line):
+        raise ValueError("entry must be a single line without control characters")
+    try:
+        line.encode("ascii")
+    except UnicodeEncodeError:
+        raise ValueError("entry must be plain ASCII")
+    if len(line) > MAX_CHARS:
         raise ValueError(f"entry must be 1-{MAX_CHARS} characters, got {len(line)}")
     return line
 
